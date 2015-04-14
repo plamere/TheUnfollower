@@ -6,4 +6,4 @@ This web app uses the Spotify Web API.
 
 It is online at [The Unfollower](http://static.echonest.com/TheUnfollower/index.html)
 
-(http://static.echonest.com/TheUnfollower/images/ss.png)
+![screenshot](http://static.echonest.com/TheUnfollower/images/ss.png)
