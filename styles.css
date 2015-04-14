@@ -121,6 +121,7 @@ view) */
     width:180px;
     height:180px;
     margin-bottom:10px;
+    object-fit:cover;
 }
 
 .playlist-box {
