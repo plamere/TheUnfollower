@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link type="text/css" href="styles.css" rel="stylesheet" />
+    <link href="https://d3nkxvtkt5c8vi.cloudfront.net/4.0.0/sp-bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="//cdn.datatables.net/1.10.5/css/jquery.dataTables.css">
+    <link href="https://sp-bootstrap.global.ssl.fastly.net/5.1.0/sp-bootstrap.min.css" rel="stylesheet">
+    <link rel="shortcut icon" href="images/favicon.png">
+    <title>The Unfollower</title>
+    <!-- Custom styles for this template -->
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+</head>
+  <body >
+    <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <a class="navbar-brand" href="?auth=1">
+            <span class="navbar-logo">Spotify</span>
+            <span class="navbar-title">The Unfollower</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main jumbotron for a primary marketing message or call to action -->
+      <div id='main' class="top worker jumbotron bjumbotron-hero container-fluid">
+          <div  id="jumbo-dialog">
+            <h1 id='ttitle' >The Unfollower</h1>
+            <p id='ttext'>
+                This app will make it easy for you to unfollow large numbers of
+                playlists.
+            </p>
+            <p>  Login with your Spotify account to get started</p>
+            <p><a class="btn btn-primary btn-lg" id='go' role="button">Login with Spotify</a></p>
+          </div>
+      </div>
+
+      <div class="worker text-center top jumbotron container-fluid shorter" id="playlist-list">
+          <h2> The Unfollower </h2>
+          <div class="top-space"> </div> 
+            <p class='intro text-center'>
+                Quickly unfollow Spotify playlists
+            </p>
+              <p id='info' class="text-center"></p>
+
+              <i> Be careful, because this can't be undone. Not responsible for any
+              deleted playlists </i>
+
+              <br>
+              <div class='top-space'>
+                <b> Total playlists :</b> <span class='right-space' id='total-playlists'> 0 </span>
+                <b> Unfollowed:</b> <span id='unfollowed'> 0 </span>
+              </div>
+          </div>
+          <div class="top-space text-center" id='playlists-body'> </div>
+          <img class='center-block spinner' width='100px' src='images/ajaxSpinner.gif'>
+     </div>
+
+    <div id="footer">
+      <div class="container text-center">
+            <br>
+            Built by <a href="https://twitter.com/plamere">plamere</a>.
+            <br>
+            Version 1.0 - April 13, 2015
+            <br>
+            Background photo by <a href="https://www.flickr.com/photos/aoberg/"> Adrian Berg </a>
+      </div>
+    </div>
+    <script src="lib/jquery-1.11.1.min.js"></script>
+    <script src="lib/bootstrap.min.js"></script>
+    <script src="lib/underscore-min.js"></script>
+
+<script>
+"use strict";
+
+var accessToken = null;
+
+var unfollowCount = 0;
+
+function error(msg) {
+    info(msg);
+    $(".spinner").hide();
+}
+
+function info(msg) {
+    $("#info").text(msg);
+}
+
+function authorizeUser() {
+    var client_id = '26d3844566954d25a77a00c203385839';
+    var redirect_uri_local = 'http://localhost:8000/index.html';
+    var redirect_uri_deployed = 'http://static.echonest.com/TheUnfollower/index.html';
+    var scopes = 'playlist-read-private playlist-modify-private playlist-modify-public';
+    var redirect_uri = redirect_uri_deployed;
+    if (isLocalHost()) {
+        redirect_uri = redirect_uri_local;
+    }
+    
+    var url = 'https://accounts.spotify.com/authorize?client_id=' + client_id +
+        '&response_type=token' +
+        '&scope=' + encodeURIComponent(scopes) + 
+        '&redirect_uri=' + encodeURIComponent(redirect_uri);
+    document.location = url;
+}
+
+function isLocalHost() {
+    return window.location.host.indexOf('localhost') >= 0;
+}
+
+function fetchPlaylists(uid, callback) {
+    $("#playlists-body").empty();
+    $(".prompt").hide();
+    $(".spinner").show();
+
+    info("Getting your playlists");
+    var url = 'https://api.spotify.com/v1/users/' + uid + '/playlists';
+    var data = {
+        limit:50,
+        offset:0
+    }
+    getSpotify(url, data, callback);
+}
+
+
+function fetchCurrentUserProfile(callback) {
+    var url = 'https://api.spotify.com/v1/me';
+    getSpotify(url, null, callback);
+}
+
+function loadPlaylists(uid) {
+    $("#playlist-list").show();
+    fetchPlaylists(uid, playlistLoaded);
+}
+
+function goodPlaylist(playlist) {
+    return true;
+}
+
+function unfollowPlaylist(uri, callback) {
+    var split_uri = uri.split(':')
+    if (split_uri.length == 5) {
+        var user = uri.split(':')[2];
+        var id = uri.split(':')[4];
+        var url = 'https://api.spotify.com/v1/users/' +
+            user + '/playlists/' + id + '/followers';
+        callSpotify('DELETE', url, {}, callback);
+    }
+}
+
+function followPlaylist(uri, callback) {
+    var split_uri = uri.split(':')
+    if (split_uri.length == 5) {
+        var user = uri.split(':')[2];
+        var id = uri.split(':')[4];
+        var url = 'https://api.spotify.com/v1/users/' +
+            user + '/playlists/' + id + '/followers';
+        callSpotify('PUT', url, {}, callback);
+    }
+}
+
+function playlistLoaded(playlists) {
+    if (playlists) {
+        var pl = $("#playlists-body");
+
+        $("#total-playlists").text(playlists.total);
+
+        _.each(playlists.items, function(playlist) {
+            var a = $("<a class='playlist-title'>").text(playlist.name) .attr("href", playlist.uri);
+            var img = $("<img class='playlist-image'>")
+                .attr('width', '150px');
+
+            if (playlist.images.length > 0) {
+                //img.attr('src', playlist.images[playlist.images.length - 1].url);
+                img.attr('src', playlist.images[0].url);
+            }
+
+            var ntracks = $("<div class='track-label'>")
+                .text(playlist.tracks.total + ' tracks');
+            var del = $("<button class='btn btn-xs btn-danger'>").text('Unfollow');
+            del.on('click', function() {
+                del.prop('disabled', true);
+                if (del.text() == 'Unfollow') {
+                    unfollowPlaylist(playlist.uri, function() {
+                        del.text('Refollow');
+                        del.removeClass('btn-danger');
+                        del.addClass('btn-primary');
+                        del.prop('disabled', false);
+                        unfollowCount++;
+                        $("#unfollowed").text(unfollowCount);
+                    });
+                } else {
+                    followPlaylist(playlist.uri, function() {
+                        del.text('Unfollow');
+                        del.addClass('btn-danger');
+                        del.removeClass('btn-primary');
+                        del.prop('disabled', false);
+                        unfollowCount--;
+                        $("#unfollowed").text(unfollowCount);
+                    });
+                }
+            });
+
+            var div = $("<div class='playlist-box'>");
+            div.append(a);
+            div.append(ntracks);
+            div.append(img);
+            div.append(del);
+            pl.append(div);
+        });
+
+        if (playlists.next) {
+            getSpotify(playlists.next, null, playlistLoaded);
+        } else {
+            info("");
+            $(".prompt").show();
+            $(".spinner").hide();
+        }
+    } else {
+        error("Sorry, I couldn't find your playlists");
+    }
+}
+
+function setAccessToken(token) {
+    accessToken = token;
+}
+
+function getAccessToken() {
+    return accessToken;
+}
+
+
+function urldecode(str) {
+   return decodeURIComponent((str+'').replace(/\+/g, '%20'));
+}
+
+function parseHash() {
+    var hash = location.hash.replace(/#/g, '');
+    var all = hash.split('&');
+    var args = {};
+    _.each(all, function(keyvalue) {
+        var kv = keyvalue.split('=');
+        var key = kv[0];
+        var val = kv[1];
+        args[key] = val;
+    });
+    return args;
+}
+
+function parseParams() {
+    var params = {};
+    var q = document.URL.split('?')[1];
+    if(q != undefined){
+        q = q.split('&');
+        for(var i = 0; i < q.length; i++){
+            var pv = q[i].split('=');
+            var p = pv[0];
+            var v = pv[1];
+            params[p] = urldecode(v);
+        }
+    }
+    return params;
+}
+
+function callSpotify(type, url, json, callback) {
+    $.ajax(url, {
+        type: type,
+        data: JSON.stringify(json),
+        dataType: 'json',
+        headers: {
+            'Authorization': 'Bearer ' + accessToken,
+            'Content-Type': 'application/json'
+        },
+        success: function(r) {
+            callback(true, r);
+        },
+        error: function(r) {
+            // 2XX status codes are good, but some have no
+            // response data which triggers the error handler
+            // convert it to goodness.
+            if (r.status >= 200 && r.status < 300) {
+                callback(true, r);
+            } else {
+                callback(false, r);
+            }
+        }
+    });
+}
+
+function getSpotify(url, data, callback) {
+    var jqxhr = $.ajax(url, {
+        dataType: 'json',
+        data: data,
+        headers: {
+            'Authorization': 'Bearer ' + accessToken
+        },
+        success: function(r) {
+            callback(r);
+        },
+        error: function(r) {
+            callback(null);
+        }
+    }).always(function() {
+        if (jqxhr.status == 401) {
+            // this likely means our auth has expired so go back
+            // to the main page
+            //document.location = '?auth=true';
+            console.log('getspotify', jqxhr);
+        }
+     });
+}
+
+
+function processParams() {
+    var params = parseParams();
+    var visitedBefore = localStorage.getItem('previouslyAuthorized');
+    var needsFreshAuthentication = !visitedBefore || 'auth' in params;
+    if (needsFreshAuthentication) {
+    } else {
+        authorizeUser();
+    }
+}
+
+
+function initApp() {
+    $(".spinner").hide();
+    $("#playlist-list").hide();
+    var args = parseHash();
+
+    if ('error' in args) {
+        error("Sorry, I can't read your playlists from Spotify without authorization");
+        $("#go").show();
+        $("#go").on('click', function() {
+            authorizeUser();
+        });
+    } else if ('access_token' in args) {
+        var accessToken = args['access_token'];
+        setAccessToken(accessToken);
+        $(".worker").hide();
+        fetchCurrentUserProfile(function(user) {
+            if (user) {
+                $("#who").text(user.id);
+                loadPlaylists(user.id);
+                localStorage.setItem('previouslyAuthorized', 1);
+            } else {
+                error("Trouble getting the user profile");
+            }
+        });
+    }  else {
+        processParams();
+    }
+
+    $("#go").show();
+    $("#go").on('click', function() {
+        authorizeUser();
+    });
+}
+
+$(document).ready(
+    function() {
+        initApp();
+    }
+);
+
+</script>
+
+</body>
+</html>

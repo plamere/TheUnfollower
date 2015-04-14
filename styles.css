@@ -1,0 +1,136 @@
+/* Sticky footer styles */
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  /* Margin bottom by footer height */
+  margin-bottom: 28px;
+  padding-top: 0;
+  /*background:rgb(129,175,177) !important;*/
+}
+
+#footer {
+  margin-top:4px;
+  width: 100%;
+  height: 18px;
+  font-size:12px;
+}
+
+.sp-jumbotron-custom-inverse {
+  /*background-image: url(images/background.jpg);*/
+}
+
+#main {
+    background-image: url(images/background.jpg);
+}   
+
+@media screen and (min-width: 768px) {
+  .sp-jumbotron-custom {
+  }
+}
+
+#playlist-title {
+    font-size:60px;
+}
+.h1 {
+  margin-bottom: 42px; /* (@padding-base-vertical * 7) */
+}
+
+.top {
+    margin-top:100px;
+    position:relative;
+}
+
+img {
+  margin: 0 auto;
+}
+
+h3 {
+  font-weight: 600; /* @font-weight-semibold */
+  margin-top: 12px;
+}
+
+
+p {
+  margin-bottom: 18px; /* a little more breathing room between feature tiles in mobile
+view) */
+}
+
+@media screen and (min-width: 992px) {
+  p {
+    margin-bottom: 12px; /* reset to default */
+  }
+}
+
+#info {
+    font-size:32px;
+}
+
+
+#ttext {
+    margin-top:20px;
+    margin-bottom:30px;
+    width: 80%;
+    margin-left:auto;
+    margin-right:auto;
+
+}
+
+#ttitle {
+    color:white;
+}
+
+#jumbo-dialog {
+    color:white;
+    background: rgba(50,50,50, 0.3);
+    border-radius:15px;
+}
+
+
+.shorter {
+    margin-bottom:0px !important;
+    padding-bottom:8px !important;
+}
+
+.worker h2 {
+    font-size:58px;
+    padding-top:10px;
+    margin-top:10px;
+}
+
+.intro {
+    width:100%;
+}
+
+
+.top-space {
+    margin-top:20px;
+}
+
+.right-space {
+    margin-right:10px;
+}
+
+.playlist-title {
+    font-size:18px;
+}
+
+.playlist-image {
+    width:180px;
+    height:180px;
+    margin-bottom:10px;
+}
+
+.playlist-box {
+    width:250px;
+    height:300px;
+    position:relative;
+    display: inline-block;
+    margin:5px;
+}
+
+.track-label {
+    font-size:12px;
+}
